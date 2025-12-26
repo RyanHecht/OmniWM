@@ -67,6 +67,8 @@ enum HotkeyCommand: Codable, Equatable, Hashable {
 
     case openWindowFinder
 
+    case raiseAllFloatingWindows
+
     var id: String {
         switch self {
         case let .focus(dir): "focus.\(dir.rawValue)"
@@ -114,6 +116,7 @@ enum HotkeyCommand: Codable, Equatable, Hashable {
         case .balanceSizes: "balanceSizes"
         case let .summonWorkspace(idx): "summonWorkspace.\(idx)"
         case .openWindowFinder: "openWindowFinder"
+        case .raiseAllFloatingWindows: "raiseAllFloatingWindows"
         }
     }
 
@@ -164,6 +167,7 @@ enum HotkeyCommand: Codable, Equatable, Hashable {
         case .balanceSizes: "Balance Sizes"
         case let .summonWorkspace(idx): "Summon Workspace \(idx + 1)"
         case .openWindowFinder: "Open Window Finder"
+        case .raiseAllFloatingWindows: "Raise All Floating Windows"
         }
     }
 }
@@ -1298,6 +1302,8 @@ final class WMController {
             summonWorkspace(index: index)
         case .openWindowFinder:
             openWindowFinder()
+        case .raiseAllFloatingWindows:
+            raiseAllFloatingWindows()
         }
     }
 
@@ -2824,6 +2830,61 @@ final class WMController {
 
         WindowFinderController.shared.show(windows: items) { [weak self] item in
             self?.navigateToWindow(item)
+        }
+    }
+
+    private func raiseAllFloatingWindows() {
+        guard let monitor = monitorForInteraction() else { return }
+
+        var lastRaisedApp: NSRunningApplication?
+        var lastRaisedWindow: AXUIElement?
+        var ownAppHasFloatingWindows = false
+        let ownPid = ProcessInfo.processInfo.processIdentifier
+
+        for app in NSWorkspace.shared.runningApplications where app.activationPolicy != .prohibited {
+            let axApp = AXUIElementCreateApplication(app.processIdentifier)
+            var windowsRef: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+                  let windows = windowsRef as? [AXUIElement] else { continue }
+
+            for window in windows {
+                let axRef = AXWindowRef(id: UUID(), element: window)
+
+                // Filter to current monitor
+                guard let windowFrame = try? AXWindowService.frame(axRef) else { continue }
+                let windowCenter = CGPoint(x: windowFrame.midX, y: windowFrame.midY)
+                guard monitor.visibleFrame.contains(windowCenter) else { continue }
+
+                // Check if app has alwaysFloat rule
+                let hasAlwaysFloatRule = app.bundleIdentifier.flatMap { appRulesByBundleId[$0]?.alwaysFloat } == true
+
+                // Raise windows that are either:
+                // 1. Inherently floating (dialogs, panels, etc.)
+                // 2. From apps with alwaysFloat app rule
+                let windowType = AXWindowService.windowType(axRef, appPolicy: app.activationPolicy)
+                guard windowType == .floating || hasAlwaysFloatRule else { continue }
+
+                let _ = AXUIElementPerformAction(window, kAXRaiseAction as CFString)
+
+                if app.processIdentifier == ownPid {
+                    ownAppHasFloatingWindows = true
+                } else {
+                    lastRaisedApp = app
+                    lastRaisedWindow = window
+                }
+            }
+        }
+
+        // Focus the topmost raised window
+        if let app = lastRaisedApp, let window = lastRaisedWindow {
+            app.activate()
+            let axApp = AXUIElementCreateApplication(app.processIdentifier)
+            let _ = AXUIElementSetAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, window)
+        }
+
+        // Handle OmniWM's own floating windows
+        if ownAppHasFloatingWindows {
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 

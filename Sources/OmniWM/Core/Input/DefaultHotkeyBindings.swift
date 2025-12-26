@@ -421,6 +421,12 @@ enum DefaultHotkeyBindings {
             binding: KeyBinding(keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey | optionKey))
         ))
 
+        bindings.append(HotkeyBinding(
+            id: "raiseAllFloatingWindows",
+            command: .raiseAllFloatingWindows,
+            binding: KeyBinding(keyCode: UInt32(kVK_ANSI_R), modifiers: UInt32(optionKey | shiftKey))
+        ))
+
         return bindings
     }
 }
