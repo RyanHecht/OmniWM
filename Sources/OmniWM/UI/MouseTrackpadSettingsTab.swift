@@ -23,6 +23,7 @@ struct MouseTrackpadSettingsTab: View {
         Form {
             niriColumnScrollingSection
             workspaceSwipeSection
+            overviewGestureSection
             trackpadDirectionSection
             mouseResizeSection
             focusFollowsMouseSection
@@ -131,8 +132,26 @@ struct MouseTrackpadSettingsTab: View {
         }
     }
 
-    private var trackpadDirectionSection: some View {
-        Section("Trackpad Direction") {
+    private var overviewGestureSection: some View {
+        Section("Overview Gesture") {
+            Toggle("Enable Overview Gesture", isOn: $settings.overviewGestureEnabled)
+
+            SettingsCaption("Swipe up to open the Overview on the monitor under the cursor")
+
+            Picker("Overview Fingers", selection: $settings.overviewGestureFingerCount) {
+                ForEach(GestureFingerCount.allCases, id: \.self) { count in
+                    Text(count.displayName).tag(count)
+                }
+            }
+            .disabled(!settings.overviewGestureEnabled)
+
+            if showOverviewGestureConflictWarning {
+                SettingsCaption(overviewGestureConflictWarning)
+            }
+        }
+    }
+
+    private var trackpadDirectionSection: some View {        Section("Trackpad Direction") {
             Toggle("Invert Direction (Natural)", isOn: $settings.gestureInvertDirection)
                 .disabled(!settings.scrollGestureEnabled && !settings.workspaceSwipeEnabled)
 
@@ -203,5 +222,20 @@ struct MouseTrackpadSettingsTab: View {
 
     private var twoFingerWorkspaceSwipeWarning: String {
         "Two-finger workspace swipes can intercept normal scrolling in apps."
+    }
+
+    private var showOverviewGestureConflictWarning: Bool {
+        guard settings.overviewGestureEnabled else { return false }
+        let overviewCount = settings.overviewGestureFingerCount
+        let columnConflict = settings.scrollGestureEnabled && settings.gestureFingerCount == overviewCount
+        let workspaceConflict = settings.workspaceSwipeEnabled
+            && settings.workspaceSwipeFingerCount == overviewCount
+            && settings.effectiveWorkspaceSwipeAxis == .vertical
+        return columnConflict || workspaceConflict
+    }
+
+    private var overviewGestureConflictWarning: String {
+        "This finger count is already used by another vertical gesture. "
+            + "Pick a different count to avoid conflicts (an upward swipe will open Overview first)."
     }
 }

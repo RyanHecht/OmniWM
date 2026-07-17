@@ -200,6 +200,8 @@ struct CanonicalTOMLConfig: Codable, Equatable {
         var workspaceSwipeEnabled: Bool
         var workspaceSwipeFingerCount: Int
         var workspaceSwipeAxis: String
+        var overviewGestureEnabled: Bool
+        var overviewGestureFingerCount: Int
     }
 
     struct StatusBar: Codable, Equatable {
@@ -965,6 +967,18 @@ extension CanonicalTOMLConfig.Gestures {
             default: defaults.workspaceSwipeAxis,
             recovering: recovering
         )
+        overviewGestureEnabled = try container.decode(
+            Bool.self,
+            forKey: .overviewGestureEnabled,
+            default: defaults.overviewGestureEnabled,
+            recovering: recovering
+        )
+        overviewGestureFingerCount = try container.decode(
+            Int.self,
+            forKey: .overviewGestureFingerCount,
+            default: defaults.overviewGestureFingerCount,
+            recovering: recovering
+        )
     }
 }
 
@@ -1204,7 +1218,9 @@ extension CanonicalTOMLConfig {
             trackpadScrollStyle: export.trackpadScrollStyle,
             workspaceSwipeEnabled: export.workspaceSwipeEnabled,
             workspaceSwipeFingerCount: export.workspaceSwipeFingerCount,
-            workspaceSwipeAxis: export.workspaceSwipeAxis
+            workspaceSwipeAxis: export.workspaceSwipeAxis,
+            overviewGestureEnabled: export.overviewGestureEnabled,
+            overviewGestureFingerCount: export.overviewGestureFingerCount
         )
         statusBar = StatusBar(
             showWorkspaceName: export.statusBarShowWorkspaceName,
@@ -1330,6 +1346,8 @@ extension CanonicalTOMLConfig {
             workspaceSwipeEnabled: gestures.workspaceSwipeEnabled,
             workspaceSwipeFingerCount: gestures.workspaceSwipeFingerCount,
             workspaceSwipeAxis: gestures.workspaceSwipeAxis,
+            overviewGestureEnabled: gestures.overviewGestureEnabled,
+            overviewGestureFingerCount: gestures.overviewGestureFingerCount,
             statusBarShowWorkspaceName: statusBar.showWorkspaceName,
             statusBarShowAppNames: statusBar.showAppNames,
             statusBarUseWorkspaceId: statusBar.useWorkspaceId,

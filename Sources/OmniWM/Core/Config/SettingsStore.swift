@@ -425,6 +425,16 @@ final class SettingsStore {
         workspaceSwipeAxisLockedToVertical ? .vertical : workspaceSwipeAxis
     }
 
+    var overviewGestureEnabled = SettingsStore.defaultExport.overviewGestureEnabled {
+        didSet { scheduleSave() }
+    }
+
+    var overviewGestureFingerCount = GestureFingerCount(
+        rawValue: SettingsStore.defaultExport.overviewGestureFingerCount
+    ) ?? .four {
+        didSet { scheduleSave() }
+    }
+
     var statusBarShowWorkspaceName = SettingsStore.defaultExport.statusBarShowWorkspaceName {
         didSet { scheduleSave() }
     }
@@ -709,6 +719,8 @@ final class SettingsStore {
             workspaceSwipeEnabled: workspaceSwipeEnabled,
             workspaceSwipeFingerCount: workspaceSwipeFingerCount.rawValue,
             workspaceSwipeAxis: workspaceSwipeAxis.rawValue,
+            overviewGestureEnabled: overviewGestureEnabled,
+            overviewGestureFingerCount: overviewGestureFingerCount.rawValue,
             statusBarShowWorkspaceName: statusBarShowWorkspaceName,
             statusBarShowAppNames: statusBarShowAppNames,
             statusBarUseWorkspaceId: statusBarUseWorkspaceId,
@@ -860,6 +872,8 @@ final class SettingsStore {
         workspaceSwipeEnabled = export.workspaceSwipeEnabled
         workspaceSwipeFingerCount = GestureFingerCount(rawValue: export.workspaceSwipeFingerCount) ?? .three
         workspaceSwipeAxis = WorkspaceSwipeAxis(rawValue: export.workspaceSwipeAxis) ?? .vertical
+        overviewGestureEnabled = export.overviewGestureEnabled
+        overviewGestureFingerCount = GestureFingerCount(rawValue: export.overviewGestureFingerCount) ?? .four
         statusBarShowWorkspaceName = export.statusBarShowWorkspaceName
         statusBarShowAppNames = export.statusBarShowAppNames
         statusBarUseWorkspaceId = export.statusBarUseWorkspaceId

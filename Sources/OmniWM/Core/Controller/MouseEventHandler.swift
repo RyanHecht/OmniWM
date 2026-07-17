@@ -110,6 +110,7 @@ final class MouseEventHandler {
         var lockedGestureContext: LockedGestureContext?
         var activeGestureMode: TrackpadGestureMode?
         var workspaceSwipeFired = false
+        var overviewGestureFired = false
         let workspaceSwipeTracker = SwipeTracker()
         var suppressGestureStartUntilAllTouchesLift = false
         var consumeTrackpadScrollUntilAllTouchesLift = false
@@ -547,7 +548,9 @@ final class MouseEventHandler {
             columnScrollFingerCount: settings.gestureFingerCount.rawValue,
             workspaceSwipeEnabled: settings.workspaceSwipeEnabled,
             workspaceSwipeFingerCount: settings.workspaceSwipeFingerCount.rawValue,
-            workspaceSwipeAxis: settings.effectiveWorkspaceSwipeAxis
+            workspaceSwipeAxis: settings.effectiveWorkspaceSwipeAxis,
+            overviewGestureEnabled: settings.overviewGestureEnabled,
+            overviewGestureFingerCount: settings.overviewGestureFingerCount.rawValue
         )
     }
 
@@ -1318,7 +1321,9 @@ final class MouseEventHandler {
     private func gestureFramePreconditionsSatisfied(at location: CGPoint) -> Bool {
         guard let controller else { return false }
         guard controller.isEnabled,
-              controller.settings.scrollGestureEnabled || controller.settings.workspaceSwipeEnabled
+              controller.settings.scrollGestureEnabled
+              || controller.settings.workspaceSwipeEnabled
+              || controller.settings.overviewGestureEnabled
         else {
             abortActiveGestureIfNeeded()
             return false
@@ -1502,6 +1507,10 @@ final class MouseEventHandler {
                 cumulative: axis == .horizontal ? metrics.cumulativeX : metrics.cumulativeY,
                 monitorId: lockedContext.monitorId
             )
+        case .overview:
+            guard !state.overviewGestureFired else { return }
+            state.overviewGestureFired = true
+            controller.toggleOverview()
         case nil:
             abortActiveGestureIfNeeded()
         }
@@ -1537,6 +1546,8 @@ final class MouseEventHandler {
                 allowFlick: allowFlick,
                 timestamp: timestamp
             )
+        case .overview:
+            break
         default:
             if let engine = controller?.niriEngine {
                 finalizeOrCancelCommittedGesture(using: lockedContext, engine: engine, timestamp: timestamp)
@@ -1805,6 +1816,7 @@ final class MouseEventHandler {
         state.lockedGestureContext = nil
         state.activeGestureMode = nil
         state.workspaceSwipeFired = false
+        state.overviewGestureFired = false
     }
 
     private func currentSelectionNode(

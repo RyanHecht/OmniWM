@@ -198,8 +198,36 @@ final class SettingsTOMLCodecTests: XCTestCase {
         XCTAssertEqual(decoded.workspaceSwipeAxis, WorkspaceSwipeAxis.horizontal.rawValue)
     }
 
-    func testWorkspaceSwipeSettingsRecoverToDefaultsWhenMissing() throws {
+    func testOverviewGestureSettingsRoundTrip() throws {
+        let defaults = SettingsExport.defaults()
+        XCTAssertFalse(defaults.overviewGestureEnabled)
+        XCTAssertEqual(defaults.overviewGestureFingerCount, GestureFingerCount.four.rawValue)
+
+        var export = defaults
+        export.overviewGestureEnabled = true
+        export.overviewGestureFingerCount = GestureFingerCount.three.rawValue
+        let data = try SettingsTOMLCodec.encode(export)
+        let encoded = String(decoding: data, as: UTF8.self)
+
+        XCTAssertTrue(encoded.contains("overviewGestureEnabled = true"))
+        XCTAssertTrue(encoded.contains("overviewGestureFingerCount = 3"))
+
+        let decoded = try SettingsTOMLCodec.decode(data)
+        XCTAssertTrue(decoded.overviewGestureEnabled)
+        XCTAssertEqual(decoded.overviewGestureFingerCount, GestureFingerCount.three.rawValue)
+    }
+
+    func testOverviewGestureSettingsRecoverToDefaultsWhenMissing() throws {
         let withoutKeys = try defaultsWithReplacements(
+            ("overviewGestureEnabled = false\n", ""),
+            ("overviewGestureFingerCount = 4\n", "")
+        )
+        let decoded = try SettingsTOMLCodec.decode(withoutKeys)
+        XCTAssertFalse(decoded.overviewGestureEnabled)
+        XCTAssertEqual(decoded.overviewGestureFingerCount, GestureFingerCount.four.rawValue)
+    }
+
+    func testWorkspaceSwipeSettingsRecoverToDefaultsWhenMissing() throws {        let withoutKeys = try defaultsWithReplacements(
             ("workspaceSwipeEnabled = false\n", ""),
             ("workspaceSwipeFingerCount = 3\n", ""),
             ("workspaceSwipeAxis = \"vertical\"\n", "")

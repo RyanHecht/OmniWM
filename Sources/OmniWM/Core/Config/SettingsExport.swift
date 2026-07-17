@@ -108,6 +108,8 @@ struct SettingsExport: Equatable {
     var workspaceSwipeEnabled: Bool
     var workspaceSwipeFingerCount: Int
     var workspaceSwipeAxis: String
+    var overviewGestureEnabled: Bool
+    var overviewGestureFingerCount: Int
     var statusBarShowWorkspaceName: Bool
     var statusBarShowAppNames: Bool
     var statusBarUseWorkspaceId: Bool
@@ -222,6 +224,8 @@ extension SettingsExport {
             workspaceSwipeEnabled: false,
             workspaceSwipeFingerCount: GestureFingerCount.three.rawValue,
             workspaceSwipeAxis: WorkspaceSwipeAxis.vertical.rawValue,
+            overviewGestureEnabled: false,
+            overviewGestureFingerCount: GestureFingerCount.four.rawValue,
             statusBarShowWorkspaceName: false,
             statusBarShowAppNames: false,
             statusBarUseWorkspaceId: false,

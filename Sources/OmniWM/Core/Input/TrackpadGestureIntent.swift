@@ -6,6 +6,7 @@ import CoreGraphics
 enum TrackpadGestureMode: Equatable {
     case columnScroll
     case workspaceSwitch(axis: WorkspaceSwipeAxis)
+    case overview
 }
 
 enum TrackpadGestureIntent {
@@ -15,6 +16,8 @@ enum TrackpadGestureIntent {
         var workspaceSwipeEnabled: Bool
         var workspaceSwipeFingerCount: Int
         var workspaceSwipeAxis: WorkspaceSwipeAxis
+        var overviewGestureEnabled: Bool
+        var overviewGestureFingerCount: Int
     }
 
     static let workspaceSwipeTriggerUnits: CGFloat = 140.0
@@ -23,11 +26,13 @@ enum TrackpadGestureIntent {
     static func allowsGestureStart(_ config: Config, fingerCount: Int) -> Bool {
         (config.columnScrollEnabled && fingerCount == config.columnScrollFingerCount)
             || (config.workspaceSwipeEnabled && fingerCount == config.workspaceSwipeFingerCount)
+            || (config.overviewGestureEnabled && fingerCount == config.overviewGestureFingerCount)
     }
 
     static func hasCandidateMode(_ config: Config, fingerCount: Int, columnContextAvailable: Bool) -> Bool {
         (config.columnScrollEnabled && fingerCount == config.columnScrollFingerCount && columnContextAvailable)
             || (config.workspaceSwipeEnabled && fingerCount == config.workspaceSwipeFingerCount)
+            || (config.overviewGestureEnabled && fingerCount == config.overviewGestureFingerCount)
     }
 
     static func resolveMode(
@@ -43,6 +48,13 @@ enum TrackpadGestureIntent {
             && columnContextAvailable
         if columnCandidate, horizontalDominant {
             return .columnScroll
+        }
+        if config.overviewGestureEnabled,
+           fingerCount == config.overviewGestureFingerCount,
+           !horizontalDominant,
+           cumulativeY > 0
+        {
+            return .overview
         }
         guard config.workspaceSwipeEnabled, fingerCount == config.workspaceSwipeFingerCount else { return nil }
         let axis: WorkspaceSwipeAxis = columnCandidate ? .vertical : config.workspaceSwipeAxis

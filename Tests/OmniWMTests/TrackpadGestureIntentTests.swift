@@ -11,14 +11,18 @@ final class TrackpadGestureIntentTests: XCTestCase {
         columnFingers: Int = 3,
         workspaceEnabled: Bool = true,
         workspaceFingers: Int = 3,
-        workspaceAxis: WorkspaceSwipeAxis = .vertical
+        workspaceAxis: WorkspaceSwipeAxis = .vertical,
+        overviewEnabled: Bool = false,
+        overviewFingers: Int = 4
     ) -> TrackpadGestureIntent.Config {
         TrackpadGestureIntent.Config(
             columnScrollEnabled: columnEnabled,
             columnScrollFingerCount: columnFingers,
             workspaceSwipeEnabled: workspaceEnabled,
             workspaceSwipeFingerCount: workspaceFingers,
-            workspaceSwipeAxis: workspaceAxis
+            workspaceSwipeAxis: workspaceAxis,
+            overviewGestureEnabled: overviewEnabled,
+            overviewGestureFingerCount: overviewFingers
         )
     }
 
@@ -241,5 +245,108 @@ final class TrackpadGestureIntentTests: XCTestCase {
             TrackpadGestureIntent.releaseFlickDisplacement(cumulativeAxisUnits: 0, velocity: -900),
             CGFloat(-900)
         )
+    }
+
+    // MARK: - Overview gesture
+
+    func testGestureStartAllowedForOverviewFingerCount() {
+        let config = makeConfig(
+            columnEnabled: false,
+            workspaceEnabled: false,
+            overviewEnabled: true,
+            overviewFingers: 4
+        )
+        XCTAssertTrue(TrackpadGestureIntent.allowsGestureStart(config, fingerCount: 4))
+        XCTAssertFalse(TrackpadGestureIntent.allowsGestureStart(config, fingerCount: 3))
+    }
+
+    func testCandidateModeAcceptsOverviewCountWithoutColumnContext() {
+        let config = makeConfig(
+            columnEnabled: false,
+            workspaceEnabled: false,
+            overviewEnabled: true,
+            overviewFingers: 4
+        )
+        XCTAssertTrue(TrackpadGestureIntent.hasCandidateMode(config, fingerCount: 4, columnContextAvailable: false))
+    }
+
+    func testResolveModeResolvesOverviewForUpwardSwipe() {
+        let mode = TrackpadGestureIntent.resolveMode(
+            makeConfig(columnEnabled: false, workspaceEnabled: false, overviewEnabled: true, overviewFingers: 4),
+            fingerCount: 4,
+            cumulativeX: 10,
+            cumulativeY: 50,
+            columnContextAvailable: false
+        )
+        XCTAssertEqual(mode, .overview)
+    }
+
+    func testResolveModeRejectsOverviewForDownwardSwipe() {
+        let mode = TrackpadGestureIntent.resolveMode(
+            makeConfig(columnEnabled: false, workspaceEnabled: false, overviewEnabled: true, overviewFingers: 4),
+            fingerCount: 4,
+            cumulativeX: 10,
+            cumulativeY: -50,
+            columnContextAvailable: false
+        )
+        XCTAssertNil(mode)
+    }
+
+    func testResolveModeRejectsOverviewForHorizontalSwipe() {
+        let mode = TrackpadGestureIntent.resolveMode(
+            makeConfig(columnEnabled: false, workspaceEnabled: false, overviewEnabled: true, overviewFingers: 4),
+            fingerCount: 4,
+            cumulativeX: 50,
+            cumulativeY: 10,
+            columnContextAvailable: false
+        )
+        XCTAssertNil(mode)
+    }
+
+    func testResolveModeRejectsOverviewWhenDisabled() {
+        let mode = TrackpadGestureIntent.resolveMode(
+            makeConfig(columnEnabled: false, workspaceEnabled: false, overviewEnabled: false, overviewFingers: 4),
+            fingerCount: 4,
+            cumulativeX: 10,
+            cumulativeY: 50,
+            columnContextAvailable: false
+        )
+        XCTAssertNil(mode)
+    }
+
+    func testResolveModeOverviewTakesPrecedenceOverWorkspaceUpSwipeAtSharedCount() {
+        let mode = TrackpadGestureIntent.resolveMode(
+            makeConfig(
+                columnEnabled: false,
+                workspaceEnabled: true,
+                workspaceFingers: 4,
+                workspaceAxis: .vertical,
+                overviewEnabled: true,
+                overviewFingers: 4
+            ),
+            fingerCount: 4,
+            cumulativeX: 10,
+            cumulativeY: 50,
+            columnContextAvailable: false
+        )
+        XCTAssertEqual(mode, .overview)
+    }
+
+    func testResolveModeFallsBackToWorkspaceForDownSwipeAtSharedCount() {
+        let mode = TrackpadGestureIntent.resolveMode(
+            makeConfig(
+                columnEnabled: false,
+                workspaceEnabled: true,
+                workspaceFingers: 4,
+                workspaceAxis: .vertical,
+                overviewEnabled: true,
+                overviewFingers: 4
+            ),
+            fingerCount: 4,
+            cumulativeX: 10,
+            cumulativeY: -50,
+            columnContextAvailable: false
+        )
+        XCTAssertEqual(mode, .workspaceSwitch(axis: .vertical))
     }
 }
